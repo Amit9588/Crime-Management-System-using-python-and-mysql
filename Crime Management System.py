@@ -183,7 +183,7 @@ class Criminal:
         male = Radiobutton(radio_frame_gender,text='Male', value = 'male', variable=self.var_gender,font=("arial",9,'bold'))
         male.grid(row=0,column=0,pady=2,padx=5,sticky=W)
 
-        female = Radiobutton(radio_frame_gender,text='Female', value = 'male', variable=self.var_gender,font=("arial",9,'bold'))
+        female = Radiobutton(radio_frame_gender,text='Female', value = 'female', variable=self.var_gender,font=("arial",9,'bold'))
         female.grid(row=0,column=1,pady=2,padx=5,sticky=W)
 
         # trans = Radiobutton(radio_frame_gender,text='TransGender', value = 'transgender', font=("arial",9,'bold'))
@@ -214,17 +214,17 @@ class Criminal:
         btn_add.grid(row=0,column=0,padx=3,pady=5)
 
         #update button
-        btn_update  = Button(butttn_frame,text='Update Record',font=('arial',13,'bold'),width=14,bg='blue',fg='white')
+        btn_update  = Button(butttn_frame,text='Update Record',command=self.update_data,font=('arial',13,'bold'),width=14,bg='blue',fg='white')
         btn_update .grid(row=0,column=1,padx=3,pady=5)
 
         #Delete Button
 
-        btn_delete = Button(butttn_frame,text='Delete Record',font=('arial',13,'bold'),width=14,bg='blue',fg='white')
+        btn_delete = Button(butttn_frame,text='Delete Record',command=self.delete_data,font=('arial',13,'bold'),width=14,bg='blue',fg='white')
         btn_delete.grid(row=0,column=2,padx=3,pady=5)
 
         #clear Button
 
-        btn_clear = Button(butttn_frame,text='Clear Record',font=('arial',13,'bold'),width=14,bg='blue',fg='white')
+        btn_clear = Button(butttn_frame,text='Clear Record',command=self.clear_data,font=('arial',13,'bold'),width=14,bg='blue',fg='white')
         btn_clear.grid(row=0,column=4,padx=3,pady=5)
 
         #right side image
@@ -241,28 +241,32 @@ class Criminal:
         down_frame = LabelFrame(Main_frame,bd=2,relief=RIDGE,text="Criminal Information Table",font=('times new roman',11,'bold'),fg='red',bg='white')
         down_frame.place(x=0,y=241,width=1350,height=230)
 
+
         search_frame = LabelFrame(down_frame,bd=2,relief=RIDGE,text="Search Criminal Record",font=('times new roman',11,'bold'),fg='Blue',bg='white')
         search_frame.place(x=0,y=0,width=1340,height=60)
+
 
         search_by= Label(search_frame,font=('arial',11,'bold'),text='Search By',bg='red',fg='white')
         search_by.grid(row=0,column=0,sticky=W,padx=5)
 
-        combo_search= ttk.Combobox(search_frame,font=('arial',11,'bold'),width=18)
+        self.var_com_search=StringVar()
+        combo_search= ttk.Combobox(search_frame,textvariable=self.var_com_search,font=('arial',11,'bold'),width=18)
         combo_search['value']=('Select Option','Case_id','Criminal_no')
         combo_search.set(0)
         combo_search.grid(row=0,column=1,sticky=W,padx=5)
 
-        search_txt= ttk.Entry(search_frame,width=19,font=('arial',11,'bold'))
+        self.var_search=StringVar()
+        search_txt= ttk.Entry(search_frame,width=19,textvariable=self.var_search,font=('arial',11,'bold'))
         search_txt.grid(row=0,column=2,padx=5,sticky=W)
 
         #Search Button
 
-        btn_search = Button(search_frame,text='Search',font=('arial',13,'bold'),width=14,bg='blue',fg='white')
+        btn_search = Button(search_frame,text='Search',command=self.search,font=('arial',13,'bold'),width=14,bg='blue',fg='white')
         btn_search.grid(row=0,column=3,padx=3,pady=5)
 
         #Show ALl Button
 
-        btn_all = Button(search_frame,text='Show All',font=('arial',13,'bold'),width=14,bg='blue',fg='white')
+        btn_all = Button(search_frame,text='Show All',command=self.fetch_Data,font=('arial',13,'bold'),width=14,bg='blue',fg='white')
         btn_all.grid(row=0,column=4,padx=3,pady=5)
 
         table_frame= Frame(down_frame,bd=2,relief=RIDGE)
@@ -321,6 +325,8 @@ class Criminal:
 
         self.criminal_table.pack(fill=BOTH,expand=1)
 
+        self.criminal_table.bind("<ButtonRelease>",self.get_cursor)
+
         self.fetch_Data()
         
 
@@ -374,6 +380,124 @@ class Criminal:
                 self.criminal_table.insert('',END,values=i)
             conn.commit()
         conn.close()
+
+
+    #get cursor
+    def get_cursor(self,event=""):
+        cursor_row=self.criminal_table.focus()
+        content=self.criminal_table.item(cursor_row)
+        data=content['values']
+
+
+        self.var_case_id.set(data[0])
+        self.var_criminal_no.set(data[1])
+        self.var_name.set(data[2])
+        self.var_nickname.set(data[3])
+        self.var_age.set(data[4])
+        self.var_occupation.set(data[5])
+        self.var_arrest_date.set(data[6])
+        self.var_date_of_crime.set(data[7])
+        self.var_crime_type.set(data[8])
+        self.var_father_name.set(data[9])
+        self.var_address.set(data[10])
+        self.var_birthmark.set(data[11])
+        self.var_gender.set(data[12])
+        self.var_most_wanted.set(data[13])
+        
+    def update_data(self):
+        if self.var_case_id.get()=='':
+            messagebox.showerror('Error','All fields are required')
+        else:
+            try:
+                update=messagebox.askyesno('Update','Are you sure to update the criminal record ?')
+                if update>0:
+                    conn=mysql.connector.connect(host='localhost',username='root',password='Amit@9588',database='crime_management')
+                    my_cursor=conn.cursor()
+                    my_cursor.execute('Update criminal set Criminal_No=%s,Criminal_name=%s,Nick_name=%s,Age=%s,occupation=%s,Arrest_date=%s,Date_of_crime=%s,crime_type=%s,father_name=%s,address=%s,birthmark=%s,gender=%s,most_wanted=%s where Case_id=%s',(
+                                                                                                                                                                                                                                                            self.var_criminal_no.get(),
+                                                                                                                                                                                                                                                            self.var_name.get(),
+                                                                                                                                                                                                                                                            self.var_nickname.get(),
+                                                                                                                                                                                                                                                            self.var_age.get(),
+                                                                                                                                                                                                                                                            self.var_occupation.get(),
+                                                                                                                                                                                                                                                            self.var_arrest_date.get(),
+                                                                                                                                                                                                                                                            self.var_date_of_crime.get(),
+                                                                                                                                                                                                                                                            self.var_crime_type.get(),
+                                                                                                                                                                                                                                                            self.var_father_name.get(),
+                                                                                                                                                                                                                                                            self.var_address.get(),
+                                                                                                                                                                                                                                                            self.var_birthmark.get(),
+                                                                                                                                                                                                                                                            self.var_gender.get(),
+                                                                                                                                                                                                                                                            self.var_most_wanted.get(),
+                                                                                                                                                                                                                                                            self.var_case_id.get(),))
+                else:
+                    if not update:
+                        return
+                conn.commit()
+                self.fetch_Data()
+                conn.close()
+                messagebox.showinfo('Sucess','Criminal Record updated Successfully')
+            except Exception as es:
+                messagebox.showerror('Error',f'Due to {str(es)}')
+                
+
+    #Delete 
+    def delete_data(self):
+        if self.var_case_id.get()=='':
+            messagebox.showerror('Error','All fields are required')
+        else:
+            try:
+                delete=messagebox.askyesno('Delete','Are you sure to delete the criminal record ?')
+                if delete>0:
+                    conn=mysql.connector.connect(host='localhost',username='root',password='Amit@9588',database='crime_management')
+                    my_cursor=conn.cursor()
+                    sql='delete from criminal where Case_id=%s'
+                    value=(self.var_case_id.get(),)
+                    my_cursor.execute(sql,value)
+                else:
+                    if not delete:
+                        return
+                conn.commit()
+                self.fetch_Data()
+                self.clear_data()
+                conn.close()
+                messagebox.showinfo('Success','Criminal record successfully Deleted')
+            except Exception as es:
+                messagebox.showerror("Error",f"Due to {str(es)} ")
+
+    #clear 
+    def clear_data(self):
+        self.var_case_id.set("")
+        self.var_criminal_no.set("")
+        self.var_name.set("")
+        self.var_nickname.set("")
+        self.var_age.set("")
+        self.var_occupation.set("")
+        self.var_arrest_date.set("")
+        self.var_date_of_crime.set("")
+        self.var_crime_type.set("")
+        self.var_father_name.set("")
+        self.var_address.set("")
+        self.var_birthmark.set("")
+        self.var_gender.set("")
+        self.var_most_wanted.set("")
+
+    #search
+    def search(self):
+        if self.var_com_search.get()=="":
+            messagebox.showerror('Error','All fields are required')
+        else:
+            try:
+                conn=mysql.connector.connect(host='localhost',username='root',password='Amit@9588',database='crime_management')
+                my_cursor=conn.cursor()
+                my_cursor.execute('select * from criminal where ' +str(self.var_com_search.get())+" LIKE'%"+str(self.var_search.get()+"%'"))
+                rows=my_cursor.fetchall()
+                if len(rows)!= 0:
+                    self.criminal_table.delete(*self.criminal_table.get_children())
+                    for i in rows:
+                        self.criminal_table.insert("",END,values=i)
+                    conn.commit()
+                    conn.close()
+            except Exception as es:
+                messagebox.showerror('Error',f'due to {str(es)}')
 
 
 
